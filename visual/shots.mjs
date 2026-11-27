@@ -48,6 +48,14 @@ for (const vp of viewports) {
           if (op === 'scrollTo') await page.evaluate((s) => document.querySelector(s)?.scrollIntoView(), a);
           if (op === 'mouse') await page.mouse.move(vp.width * a, vp.height * b, { steps: 10 });
         }
+        if (sc.name === 'project-lightbox') {
+          const rects = await page.evaluate(() => ['.w-lightbox-backdrop', '.w-lightbox-content', '.w-lightbox-view', '.w-lightbox-image', '.w-lightbox-strip', '.w-lightbox-close'].map((q) => {
+            const el = document.querySelector(q); if (!el) return q + ' none';
+            const r = el.getBoundingClientRect(); const cs = getComputedStyle(el);
+            return `${q} ${Math.round(r.left)},${Math.round(r.top)} ${Math.round(r.width)}x${Math.round(r.height)} op=${cs.opacity} disp=${cs.display} cls=${el.className}`;
+          }).concat([`inner=${innerWidth}x${innerHeight} scrollY=${scrollY} html=${document.documentElement.className}`]));
+          log.push(`${site} ${vp.tag} lightbox:\n  ` + rects.join('\n  '));
+        }
         await page.screenshot({ path: `${out}/${vp.tag}-${sc.name}-${site}.png` });
       } catch (e) {
         log.push(`${site} ${vp.tag} ${sc.name} FAILED: ${e.message.split('\n')[0]}`);
