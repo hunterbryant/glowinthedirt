@@ -86,8 +86,12 @@ export function initLightbox() {
   let current = 0;
 
   const close = () => {
-    backdrop?.remove();
+    const el = backdrop;
     backdrop = null;
+    if (el) {
+      el.style.opacity = '0';
+      window.setTimeout(() => el.remove(), 300);
+    }
     document.documentElement.classList.remove('w-lightbox-noscroll');
     document.removeEventListener('keydown', onKey);
   };
@@ -120,7 +124,7 @@ export function initLightbox() {
     backdrop.setAttribute('aria-modal', 'true');
     backdrop.innerHTML = `
       <div class="w-lightbox-container">
-        <div class="w-lightbox-content">
+        <div class="w-lightbox-content${items.length > 1 ? ' w-lightbox-group' : ''}">
           <div class="w-lightbox-view" style="opacity:1"><div class="w-lightbox-frame">
             <figure class="w-lightbox-figure"><img class="w-lightbox-img w-lightbox-image" alt=""></figure>
           </div></div>
@@ -138,7 +142,11 @@ export function initLightbox() {
     backdrop.querySelectorAll('.w-lightbox-item').forEach((t, n) => t.addEventListener('click', (e) => { e.stopPropagation(); show(n); }));
     backdrop.querySelector('.w-lightbox-image')!.addEventListener('click', (e) => { e.stopPropagation(); show(current + 1); });
     backdrop.addEventListener('click', (e) => { if (e.target === backdrop || (e.target as HTMLElement).classList.contains('w-lightbox-frame')) close(); });
+    // webflow.css starts the backdrop at opacity 0; webflow.js faded it in.
+    backdrop.style.transition = 'opacity 300ms ease';
     document.body.appendChild(backdrop);
+    void backdrop.offsetWidth;
+    backdrop.style.opacity = '1';
     document.documentElement.classList.add('w-lightbox-noscroll');
     document.addEventListener('keydown', onKey);
     backdrop.focus();

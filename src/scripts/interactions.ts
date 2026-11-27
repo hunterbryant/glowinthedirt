@@ -381,8 +381,12 @@ class Playback {
       const go = () => {
         if (this.stopped) return;
         for (const el of els) {
-          const tw = tween(el, item, instant);
-          if (tw) this.tweens.push(tw);
+          try {
+            const tw = tween(el, item, instant);
+            if (tw) this.tweens.push(tw);
+          } catch (err) {
+            console.warn('interaction item skipped', item.actionTypeId, err);
+          }
         }
       };
       if (delay > 0) this.timers.push(window.setTimeout(go, delay));
@@ -448,18 +452,18 @@ interface Continuous { event: Obj; el: HTMLElement; groups: { cfg: Obj; tracks: 
 const continuous: Continuous[] = [];
 
 function scrollProgress(el: HTMLElement, cfg: Obj): number {
-  const r = el.getBoundingClientRect();
-  const vh = window.innerHeight;
-  // where the element's top is when progress is 0, and its bottom when progress is 1
-  let start = cfg.startsEntering ? vh : 0; // top edge position at 0%
-  let end = cfg.startsExiting ? 0 : vh;   // bottom edge position at 100%
-  if (cfg.addStartOffset) start -= ((cfg.addOffsetValue ?? 0) / 100) * vh;
-  if (cfg.addEndOffset) end += ((cfg.endOffsetValue ?? 0) / 100) * vh;
-  // distance the page must scroll between those two moments
-  const span = start - end + r.height;
-  if (span <= 0) return r.top <= start ? 100 : 0;
-  const scrolled = start - r.top;
-  return Math.min(100, Math.max(0, (scrolled / span) * 100));
+  // Port of Webflow IX2's SCROLLING_IN_VIEW handler (element-based).
+  const d = el.getBoundingClientRect();
+  const u = document.documentElement.clientHeight;
+  const sh = document.documentElement.scrollHeight;
+  let o = (cfg.addStartOffset ? cfg.addOffsetValue ?? 0 : 0) / 100;
+  let c = (cfg.addEndOffset ? cfg.endOffsetValue ?? 0 : 0) / 100;
+  o = cfg.startsEntering ? o : 1 - o;
+  c = cfg.startsExiting ? c : 1 - c;
+  const r = d.top + Math.min(d.height * o, u);
+  const f = Math.min(u + (d.top + d.height * c - r), sh);
+  if (f <= 0) return 0;
+  return (Math.min(Math.max(0, u - r), f) / f) * 100;
 }
 
 const mouse = { x: -1, y: -1 };
@@ -511,7 +515,11 @@ export function initInteractions(data: Obj) {
     const list = lists[action.config.actionListId];
     if (!list) return;
     const stopId = action.config.autoStopEventId;
-    if (stopId) playbacks.get(stopId)?.get(el)?.stop();
+    // Webflow pairs PAGE_START with PAGE_FINISH via autoStopEventId. Letting the
+    // finish event stop the start one cuts the intro short when the page loads
+    // fast (live, the CDN is slow enough that the intro always finishes first).
+    const pageEvent = ev.eventTypeId === 'PAGE_START' || ev.eventTypeId === 'PAGE_FINISH';
+    if (stopId && !pageEvent) playbacks.get(stopId)?.get(el)?.stop();
     let m = playbacks.get(ev.id);
     if (!m) playbacks.set(ev.id, (m = new Map()));
     m.get(el)?.stop();
