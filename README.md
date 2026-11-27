@@ -1,6 +1,6 @@
 # Glow in the Dirt
 
-The glowinthedirt.com site, moved off Webflow to [Astro](https://astro.build). It builds to plain static files, so it can be hosted for free on Cloudflare Pages.
+The glowinthedirt.com site, moved off Webflow to [Astro](https://astro.build). It builds to plain static files, served for free by Cloudflare Workers.
 
 ## Run it locally
 
@@ -33,12 +33,15 @@ npm run build     # static site in dist/
 
 The hourly and daily rates are in `src/pages/space.astro` (search for `$250`). Add-ons, amenities and zones are in `src/data/space.yaml`.
 
-## Deploy on Cloudflare Pages
+## Deploy (Cloudflare Workers)
 
-1. In the Cloudflare dashboard, go to Workers & Pages, then Create, then Pages, then Connect to Git, and pick this repo.
-2. Framework preset: Astro. Build command `npm run build`, output directory `dist`.
-3. Every pull request gets its own preview URL. Merging to `main` deploys the live site.
-4. When you're happy with it, add `glowinthedirt.com` and `www.glowinthedirt.com` under Custom domains, then turn off the Webflow site plan's auto-renew.
+The repo is connected to a Cloudflare Worker called `glowinthedirt` through Workers Builds. Settings live in `wrangler.jsonc`.
+
+1. Every push to a pull request builds the site and posts a preview URL on the PR (`npx wrangler preview`).
+2. Merging to `main` builds and deploys the live site (`npx wrangler deploy`).
+3. To go live on the real domain, open the Worker in the Cloudflare dashboard, go to Settings, then Domains & Routes, and add `glowinthedirt.com` and `www.glowinthedirt.com`. Then turn off the Webflow site plan's auto-renew.
+
+Unknown URLs show `src/pages/404.astro`. Cache headers for images and bundled files are in `public/_headers`.
 
 ## Notes on the move
 

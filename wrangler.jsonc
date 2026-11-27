@@ -3,7 +3,9 @@
   "name": "glowinthedirt",
   "compatibility_date": "2026-11-27",
   "assets": {
-    "directory": "./dist"
+    "directory": "./dist",
+    // Unknown URLs get dist/404.html with a real 404 status.
+    "not_found_handling": "404-page"
   },
   // Serve previews on workers.dev too.
   "preview_urls": true,
