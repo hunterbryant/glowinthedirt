@@ -8,9 +8,11 @@ interface Props {
   /** The old Webflow page id. The animations are keyed to it, so keep it as is. */
   pageId: string;
   bodyClass?: string;
+  /** Keep this page out of search results (used by the 404 page). */
+  noindex?: boolean;
 }
 
-const { title, description, ogImage, pageId, bodyClass } = Astro.props;
+const { title, description, ogImage, pageId, bodyClass, noindex } = Astro.props;
 const site = Astro.site ?? new URL('https://www.glowinthedirt.com');
 // Pages build to files like /work.html, but are served at /work.
 const canonicalPath = Astro.url.pathname.replace(/\.html$/, '').replace(/\/index$/, '') || '/';
@@ -38,7 +40,9 @@ const GA_ID = 'G-5ZYWQP5B2L';
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="google-site-verification" content="HACjy51IUTLHS72TdxwRLMBHpAfOo37AUKEo_9-N7Do" />
-    <link rel="canonical" href={canonical} />
+    {noindex ? <meta name="robots" content="noindex" /> : <link rel="canonical" href={canonical} />}
+    <!-- Basis is the main text face; fetch it early so headings don't swap late. -->
+    <link rel="preload" href="/assets/5f6a3bfda84ce4fc0f3e8f40_basis-grotesque-medium-pro.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="shortcut icon" type="image/x-icon" href="/assets/5f239098380781f960925dce_ico.png" />
     <link rel="apple-touch-icon" href="/assets/5f23909c50bf435ed400989f_webclip.png" />
     <script is:inline>
