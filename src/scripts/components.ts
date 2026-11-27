@@ -122,20 +122,16 @@ export function initLightbox() {
     backdrop.tabIndex = 0;
     backdrop.setAttribute('role', 'dialog');
     backdrop.setAttribute('aria-modal', 'true');
+    // Same DOM webflow.js builds: content = view, spinner, controls; container = content + strip.
     backdrop.innerHTML = `
       <div class="w-lightbox-container">
-        <div class="w-lightbox-content${items.length > 1 ? ' w-lightbox-group' : ''}">
-          <div class="w-lightbox-view" style="opacity:1"><div class="w-lightbox-frame">
-            <figure class="w-lightbox-figure"><img class="w-lightbox-img w-lightbox-image" alt=""></figure>
-          </div></div>
-          <div class="w-lightbox-control w-lightbox-left" role="button" aria-label="previous image"></div>
-          <div class="w-lightbox-control w-lightbox-right" role="button" aria-label="next image"></div>
-          <div class="w-lightbox-control w-lightbox-close" role="button" aria-label="close lightbox"></div>
-        </div>
-        <div class="w-lightbox-strip" role="tablist">
-          ${items.length > 1 ? items.map((u) => `<div class="w-lightbox-item" role="tab"><div class="w-lightbox-thumbnail"><img class="w-lightbox-thumbnail-image" src="${u}" alt=""></div></div>`).join('') : ''}
-        </div>
+        <div class="w-lightbox-content${items.length > 1 ? ' w-lightbox-group' : ''}"><div class="w-lightbox-view" id="w-lightbox-view" tabindex="0" style="opacity:1"><div class="w-lightbox-frame"><figure class="w-lightbox-figure"><img class="w-lightbox-img w-lightbox-image" alt=""></figure></div></div><div class="w-lightbox-spinner w-lightbox-hide" role="progressbar" aria-hidden="true"></div><div class="w-lightbox-control w-lightbox-left" role="button" aria-label="previous image" aria-controls="w-lightbox-view"></div><div class="w-lightbox-control w-lightbox-right" role="button" aria-label="next image" aria-controls="w-lightbox-view"></div><div class="w-lightbox-control w-lightbox-close" role="button" aria-label="close lightbox" tabindex="0"></div></div><div class="w-lightbox-strip" role="tablist">${items.length > 1 ? items.map((u, n) => `<div class="w-lightbox-item" role="tab" tabindex="0" aria-controls="w-lightbox-view" aria-label="show item ${n + 1} of ${items.length}"><div class="w-lightbox-thumbnail"><img class="w-lightbox-thumbnail-image" src="${u}" alt=""></div></div>`).join('') : ''}</div>
       </div>`;
+    // thumbnails get w-lightbox-wide / -tall once loaded, so webflow.css can crop them
+    backdrop.querySelectorAll<HTMLImageElement>('.w-lightbox-thumbnail-image').forEach((img) => {
+      const fit = () => img.classList.add(img.naturalWidth > img.naturalHeight ? 'w-lightbox-wide' : 'w-lightbox-tall');
+      if (img.complete && img.naturalWidth) fit(); else img.addEventListener('load', fit, { once: true });
+    });
     backdrop.querySelector('.w-lightbox-left')!.addEventListener('click', (e) => { e.stopPropagation(); show(current - 1); });
     backdrop.querySelector('.w-lightbox-right')!.addEventListener('click', (e) => { e.stopPropagation(); show(current + 1); });
     backdrop.querySelector('.w-lightbox-close')!.addEventListener('click', close);
