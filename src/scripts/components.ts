@@ -42,6 +42,9 @@ export function initSliders() {
       dot.setAttribute('tabindex', '0');
       dot.setAttribute('aria-label', `Show slide ${i + 1} of ${slides.length}`);
       dot.addEventListener('click', () => go(i));
+      dot.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(i); }
+      });
       nav?.appendChild(dot);
       return dot;
     });
@@ -70,6 +73,10 @@ export function initSliders() {
         startX = null;
         if (Math.abs(dx) > 40) go(index + (dx < 0 ? 1 : -1));
       });
+      // A cancelled touch (e.g. the page scrolled) shouldn't count as a swipe later.
+      mask.addEventListener('pointercancel', () => { startX = null; });
+      // Stop the browser's image drag from swallowing the swipe on desktop.
+      mask.addEventListener('dragstart', (e) => e.preventDefault());
     }
 
     if (autoplay) window.setInterval(() => go(index + 1), delay + duration);
@@ -125,8 +132,27 @@ export function initLightbox() {
     // Same DOM webflow.js builds: content = view, spinner, controls; container = content + strip.
     backdrop.innerHTML = `
       <div class="w-lightbox-container">
-        <div class="w-lightbox-content${items.length > 1 ? ' w-lightbox-group' : ''}"><div class="w-lightbox-view" id="w-lightbox-view" tabindex="0" style="opacity:1"><div class="w-lightbox-frame"><figure class="w-lightbox-figure"><img class="w-lightbox-img w-lightbox-image" alt=""></figure></div></div><div class="w-lightbox-spinner w-lightbox-hide" role="progressbar" aria-hidden="true"></div><div class="w-lightbox-control w-lightbox-left" role="button" aria-label="previous image" aria-controls="w-lightbox-view"></div><div class="w-lightbox-control w-lightbox-right" role="button" aria-label="next image" aria-controls="w-lightbox-view"></div><div class="w-lightbox-control w-lightbox-close" role="button" aria-label="close lightbox" tabindex="0"></div></div><div class="w-lightbox-strip" role="tablist">${items.length > 1 ? items.map((u, n) => `<div class="w-lightbox-item" role="tab" tabindex="0" aria-controls="w-lightbox-view" aria-label="show item ${n + 1} of ${items.length}"><div class="w-lightbox-thumbnail"><img class="w-lightbox-thumbnail-image" src="${u}" alt=""></div></div>`).join('') : ''}</div>
+        <div class="w-lightbox-content${items.length > 1 ? ' w-lightbox-group' : ''}"><div class="w-lightbox-view" id="w-lightbox-view" tabindex="0" style="opacity:1"><div class="w-lightbox-frame"><figure class="w-lightbox-figure"><img class="w-lightbox-img w-lightbox-image" alt=""></figure></div></div><div class="w-lightbox-spinner w-lightbox-hide" role="progressbar" aria-hidden="true"></div><div class="w-lightbox-control w-lightbox-left" role="button" aria-label="previous image" aria-controls="w-lightbox-view"></div><div class="w-lightbox-control w-lightbox-right" role="button" aria-label="next image" aria-controls="w-lightbox-view"></div><div class="w-lightbox-control w-lightbox-close" role="button" aria-label="close lightbox" tabindex="0"></div></div><div class="w-lightbox-strip" role="tablist"></div>
       </div>`;
+    // Thumbnails are built as elements so image URLs never pass through innerHTML.
+    const strip = backdrop.querySelector<HTMLElement>('.w-lightbox-strip')!;
+    if (items.length > 1) items.forEach((u, n) => {
+      const item = document.createElement('div');
+      item.className = 'w-lightbox-item';
+      item.setAttribute('role', 'tab');
+      item.tabIndex = 0;
+      item.setAttribute('aria-controls', 'w-lightbox-view');
+      item.setAttribute('aria-label', `show item ${n + 1} of ${items.length}`);
+      const thumb = document.createElement('div');
+      thumb.className = 'w-lightbox-thumbnail';
+      const img = document.createElement('img');
+      img.className = 'w-lightbox-thumbnail-image';
+      img.alt = '';
+      img.src = u;
+      thumb.appendChild(img);
+      item.appendChild(thumb);
+      strip.appendChild(item);
+    });
     // thumbnails get w-lightbox-wide / -tall once loaded, so webflow.css can crop them
     backdrop.querySelectorAll<HTMLImageElement>('.w-lightbox-thumbnail-image').forEach((img) => {
       const fit = () => img.classList.add(img.naturalWidth > img.naturalHeight ? 'w-lightbox-wide' : 'w-lightbox-tall');
