@@ -1,0 +1,83 @@
+---
+// Project page, one per file in src/content/work (same markup as the Webflow collection template).
+import { getCollection, render } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import ProjectFooter from '../../components/ProjectFooter.astro';
+import { srcsetFor } from '../../lib/images';
+
+export async function getStaticPaths() {
+  const projects = await getCollection('work');
+  return projects.map((project) => ({ params: { slug: project.id }, props: { project } }));
+}
+
+const { project } = Astro.props;
+const p = project.data;
+const { Content } = await render(project);
+const hasBody = Boolean(project.body && project.body.trim());
+const bindEmpty = (value?: string) => (value ? '' : ' w-dyn-bind-empty');
+const description = `${p.title}, a ${p.projectType} project for ${p.client}.  Glow in the Dirt's roles involved ${p.role}.`;
+---
+<Base
+  title={`Glow → Archive → ${p.title}`}
+  description={description}
+  ogImage={p.ogImage ?? p.highlightImage}
+  pageId="5f7b7f1e4ed5ea128faff1f5"
+  bodyClass="body-3"
+>
+  <div class="content-without-landing">
+    <div class="blog-container w-container">
+      <div class="w-layout-grid blog-fixed">
+        <div class="div-block-27" id="w-node-_30cba6f1-e1d8-2c98-f331-3fa32e9dd4fe-8faff1f5">
+          <a class="blog-lightbox top w-inline-block w-lightbox" href="#" data-lightbox={p.highlightImage} data-lightbox-group="Images">
+            <img alt={p.highlightAlt} class="image-33" loading="lazy" sizes="100vw" src={p.highlightImage} srcset={srcsetFor(p.highlightImage)} />
+          </a>
+          <div class="collection-list-wrapper-6 w-dyn-list">
+            {p.images.length > 0 ? (
+              <div class="collection-list-4 w-dyn-items" role="list">
+                {p.images.map((img) => (
+                  <div class="collection-item-6 w-dyn-item w-dyn-repeater-item" role="listitem">
+                    <a class="blog-lightbox w-inline-block w-lightbox" href="#" data-lightbox={img.src} data-lightbox-group="Images">
+                      <img alt={img.alt} class="image-34" loading="lazy" sizes="100vw" src={img.src} srcset={srcsetFor(img.src)} />
+                    </a>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div class="collection-list-4 w-dyn-items w-dyn-hide" role="list"></div>
+            )}
+            <div class={`empty-state w-dyn-empty${p.images.length > 0 ? ' w-dyn-hide' : ''}`}><div>No items found.</div></div>
+          </div>
+          <div class={`rich-text-block w-richtext${hasBody ? '' : ' w-dyn-bind-empty'}`}><Content /></div>
+        </div>
+        <div class="div-block-26" id="w-node-cbf7af19-a9fa-3214-b637-eaa05f2b0671-8faff1f5">
+          <a class="back-buttons w-inline-block" data-w-id="cbf7af19-a9fa-3214-b637-eaa05f2b0672" href="javascript:history.go(-1)">
+            <img alt="" class="image-3 first" height="13" loading="lazy" src="/assets/5f8cc298f1892414496eb667_small-arrow-left-white_.svg" width="14" />
+            <div class="subheader white">Back</div>
+          </a>
+          <h2 class="content-heading-2-white blog">{p.title}</h2>
+        </div>
+        <div class="blog-side-container" id="w-node-cbf7af19-a9fa-3214-b637-eaa05f2b064a-8faff1f5">
+          <p class={`body light blog${bindEmpty(p.description)}`}>{p.description}</p>
+          <div class="line-div grey"></div>
+          <div class="inline-stat first"><div class="caption-text">Client</div><div class="text-block-3 case-study">{p.client}</div></div>
+          <div class="inline-stat"><div class="caption-text">Project Type</div><div class="text-block-3 case-study">{p.projectType}</div></div>
+          <div class="inline-stat"><div class="caption-text">Our Role</div><div class="text-block-3 case-study">{p.role}</div></div>
+          <div class="line-div grey second"></div>
+          <div class="inline-stat first"><div class="caption-text">Link</div><div class={`text-block-3 case-study${bindEmpty(p.link)}`}>{p.link}</div></div>
+          <div class="skills-block">
+            <div class="line-div grey second"></div>
+            <div class="inline-stat first skills">
+              <div class="caption-text skills">Skills</div>
+              <div class="tag-container w-dyn-list">
+                <div class="collection-list-3 w-dyn-items" role="list">
+                  {p.skills.map((s) => <div class="w-dyn-item" role="listitem"><div class="tag">{s}</div></div>)}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <ProjectFooter />
+</Base>

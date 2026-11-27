@@ -1,0 +1,62 @@
+# Space page lists (previously Webflow CMS collections).
+
+addOns:
+  - name: "Coffee Service"
+    price: "15"
+  - name: "Extension Cord Pack"
+    price: "20"
+  - name: "Haze + Fog Machine + Liquid"
+    price: "50"
+  - name: "Workshop + Tool Access"
+    price: "100"
+  - name: "4, 4' DMX LED Bars"
+    price: "50"
+  - name: "4'x4' MacTech Cinema LED"
+    price: "25"
+  - name: "Audio Monitoring Room Access"
+    price: "100"
+
+amenities:
+  - group: "General"
+    items:
+      - "HVAC"
+      - "PA Speaker"
+      - "Wifi"
+      - "Full Bathroom"
+  - group: "Production"
+    items:
+      - "10' Ladder"
+      - "6' Ladder"
+      - "8' x 5' Mirror"
+      - "Wardrobe Rack"
+  - group: "Meetings"
+    items:
+      - "12 Chairs"
+      - "2x Large Sitting Tables"
+      - "Large Standing Table"
+      - "Projector"
+  - group: "Electrical"
+    items:
+      - "6x circuits"
+      - "Drop-down cords"
+      - "Ceiling Power Grid"
+
+zones:
+  - number: "1"
+    name: "Main Space"
+    sqft: "1400"
+  - number: "2"
+    name: "Kitchen"
+    sqft: "150"
+  - number: "3"
+    name: "Workshop"
+    sqft: "150"
+  - number: "4"
+    name: "Bathroom"
+    sqft: "150"
+  - number: "5"
+    name: "Loft Room"
+    sqft: "150"
+  - number: "6"
+    name: "Audio Monitoring Room*"
+    sqft: "250"

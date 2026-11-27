@@ -1,0 +1,72 @@
+---
+import '../styles/webflow.css';
+
+interface Props {
+  title: string;
+  description?: string;
+  ogImage?: string;
+  /** The old Webflow page id. The animations are keyed to it, so keep it as is. */
+  pageId: string;
+  bodyClass?: string;
+  /** Keep this page out of search results (used by the 404 page). */
+  noindex?: boolean;
+}
+
+const { title, description, ogImage, pageId, bodyClass, noindex } = Astro.props;
+const site = Astro.site ?? new URL('https://www.glowinthedirt.com');
+// Pages build to files like /work.html, but are served at /work.
+const canonicalPath = Astro.url.pathname.replace(/\.html$/, '').replace(/\/index$/, '') || '/';
+const canonical = new URL(canonicalPath, site).href;
+// Webflow put each page's animation start states in its head, so animated
+// elements stay hidden until the animation script takes over.
+const ixInitial = import.meta.glob<string>('../data/ix-initial/*.css', { query: '?raw', import: 'default', eager: true });
+const ixInitialCss = ixInitial[`../data/ix-initial/${pageId}.css`];
+const ogImageUrl = ogImage ? new URL(ogImage, site).href : undefined;
+const GA_ID = 'G-5ZYWQP5B2L';
+---
+<!doctype html>
+<html lang="en" data-wf-page={pageId}>
+  <head>
+    <meta charset="utf-8" />
+    <title>{title}</title>
+    {description && <meta name="description" content={description} />}
+    <meta property="og:title" content={title} />
+    {description && <meta property="og:description" content={description} />}
+    {ogImageUrl && <meta property="og:image" content={ogImageUrl} />}
+    <meta name="twitter:title" content={title} />
+    {description && <meta name="twitter:description" content={description} />}
+    {ogImageUrl && <meta name="twitter:image" content={ogImageUrl} />}
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="google-site-verification" content="HACjy51IUTLHS72TdxwRLMBHpAfOo37AUKEo_9-N7Do" />
+    {noindex ? <meta name="robots" content="noindex" /> : <link rel="canonical" href={canonical} />}
+    <!-- Basis is the main text face; fetch it early so headings don't swap late. -->
+    <link rel="preload" href="/assets/5f6a3bfda84ce4fc0f3e8f40_basis-grotesque-medium-pro.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="shortcut icon" type="image/x-icon" href="/assets/5f239098380781f960925dce_ico.png" />
+    <link rel="apple-touch-icon" href="/assets/5f23909c50bf435ed400989f_webclip.png" />
+    <script is:inline>
+      !function(o,c){var n=c.documentElement,t=" w-mod-";n.className+=t+"js",("ontouchstart"in o||o.DocumentTouch&&c instanceof DocumentTouch)&&(n.className+=t+"touch")}(window,document);
+    </script>
+    <script is:inline async src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`}></script>
+    <script is:inline define:vars={{ GA_ID }}>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', GA_ID);
+    </script>
+    {ixInitialCss && <Fragment set:html={`<style>${ixInitialCss}</style>`} />}
+    <style is:global>
+      body {
+        -moz-osx-font-smoothing: grayscale;
+        -webkit-font-smoothing: antialiased;
+      }
+    </style>
+  </head>
+  <body class={bodyClass}>
+    <slot />
+    <script>
+      import '../scripts/site';
+    </script>
+  </body>
+</html>
