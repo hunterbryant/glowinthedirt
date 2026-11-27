@@ -197,7 +197,7 @@ function render(el: HTMLElement) {
 // ---------------------------------------------------------------- one action item -> from/to "setter"
 
 /** Returns a function that renders the item at progress t (0..1), or null for instant actions. */
-function prepare(item: Obj, el: HTMLElement, base?: ElState): ((t: number) => void) | null {
+function prepare(item: Obj, el: HTMLElement, base?: ElState, instant = false): ((t: number) => void) | null {
   const c = item.config;
   const s = state(el);
   const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
@@ -246,6 +246,11 @@ function prepare(item: Obj, el: HTMLElement, base?: ElState): ((t: number) => vo
           const cur = s[k] && s[k]!.u !== 'auto' ? toPx(s[k]!, el, axis) : el.getBoundingClientRect()[k];
           const target = toPx({ v, u: unit }, el.parentElement ?? el, axis);
           plan.push({ k, from: cur, to: target, final: { v, u: unit } });
+        } else if (u && !instant) {
+          // Webflow quirk: a unit with no value pins that side to the size
+          // measured when the animation starts (the initial-state pass skips it).
+          const cur = el.getBoundingClientRect()[k];
+          plan.push({ k, from: cur, to: cur, final: { v: cur, u: 'px' } });
         }
       }
       return (t) => {
@@ -325,7 +330,7 @@ function tween(el: HTMLElement, item: Obj, instant: boolean): Tween | null {
   let map = running.get(el);
   if (!map) running.set(el, (map = new Map()));
   map.get(key)?.cancel();
-  const set = prepare(item, el);
+  const set = prepare(item, el, undefined, instant);
   if (!set) return null;
   const dur = item.config.duration ?? 0;
   if (instant || dur <= 0) { set(1); return null; }
