@@ -1,0 +1,28 @@
+name: Visual check (temporary)
+on:
+  push:
+    branches: [visual-check]
+permissions:
+  contents: write
+jobs:
+  shots:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: npm ci && npm run build
+      - run: npm i --no-save playwright@1.63.0
+      - run: |
+          npx astro preview --port 4321 &
+          sleep 5
+          node visual/shots.mjs
+      - name: Commit screenshots
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          git checkout --orphan visual-shots
+          git rm -rfq --cached .
+          git add -f shots
+          git commit -qm "Screenshots"
+          git push -f origin visual-shots
