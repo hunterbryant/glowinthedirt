@@ -5,6 +5,8 @@
   "assets": {
     "directory": "./dist"
   },
+  // Serve previews on workers.dev too.
+  "preview_urls": true,
   // Lets `wrangler preview` make a preview URL for each pull request.
   "previews": {}
 }
