@@ -1,0 +1,74 @@
+---
+// One row of the "Past Works" archive on /work (same markup as the Webflow collection list).
+import type { CollectionEntry } from 'astro:content';
+import { srcsetFor } from '../lib/images';
+
+interface Props {
+  project: CollectionEntry<'work'>;
+}
+
+const { project } = Astro.props;
+const p = project.data;
+const href = `/work/${project.id}`;
+const hidden = (empty: boolean) => (empty ? ' w-condition-invisible' : '');
+const bindEmpty = (value?: string) => (value ? '' : ' w-dyn-bind-empty');
+// Webflow capped the nested skills list at 5 items here.
+const skills = p.skills.slice(0, 5);
+---
+<div class="collection-item w-dyn-item" role="listitem">
+  <div class="accordion-wrapper">
+    <div class="accordion-trigger" data-w-id="0faf8e1d-f7e0-e70e-aa42-540fe91478d6">
+      <div class="archive-column five"><div class="archive-row-header">{p.client}</div></div>
+      <div class="archive-column two"><div class="archive-row-body">{p.archiveTitle ?? p.title}</div></div>
+      <div class="archive-column three"><div class="archive-row-body">{p.projectType}</div></div>
+      <div class="archive-column four">
+        <div class="archive-row-body roles">{p.role}</div>
+        <img alt="" class="image-21" data-w-id="94f0b72c-3aa2-62ed-a9f4-7d3f09de69ab" loading="lazy" src="/assets/5f6a6221a4a474a1391c7095_small-arrow-right-grey-3.svg" />
+      </div>
+      <div class="arrow-line" data-w-id="c02305a4-7d1e-7cd4-c303-062125e9460c"><div></div></div>
+      <div class="div-block-29"><div class="div-block-28" style={`background-image:url("${p.highlightImage}")`}></div></div>
+    </div>
+    <div class="accordion-item-content" data-w-id="558b2ba5-6cce-bc5c-4638-d510598f804b">
+      <div class="divide-line"></div>
+      <div class="archive-column one"></div>
+      <div class="archive-column info photos">
+        <img
+          alt="Highlight image for the select archived project."
+          class="image-31"
+          loading="lazy"
+          sizes="(max-width: 767px) 100vw, (max-width: 991px) 727.4140625px, 939.9375px"
+          src={p.highlightImage}
+          srcset={srcsetFor(p.highlightImage)}
+        />
+        <div class="text-block-3 more-info"><a href={href}>More Images →</a></div>
+      </div>
+      <div class="archive-column info">
+        <div class="archive-info-box">
+          <div class="line-div grey archive-descriptor"></div>
+          <div class="inline-stat type"><div class="caption-text">Project Type</div><div class="text-block-3 case-study">{p.projectType}</div></div>
+          <div class="inline-stat role"><div class="caption-text">Our Role</div><div class="text-block-3 case-study">{p.role}</div></div>
+          <div class={`line-div grey darker${hidden(!p.link)}`}></div>
+          <div class={`inline-stat first link stats${hidden(!p.link)}`}>
+            <div class="caption-text link">Link</div>
+            <a class="link-block w-inline-block" href={p.link || '#'}><div class={`text-block-3 archive-link${bindEmpty(p.link)}`}>{p.link}</div></a>
+          </div>
+          <div class="skills-block">
+            <div class="line-div grey darker"></div>
+            <div class="inline-stat first skills">
+              <div class="caption-text skills">Skills</div>
+              <div class="tag-container w-dyn-list">
+                <div class="collection-list-3 w-dyn-items" role="list">
+                  {skills.map((s) => <div class="w-dyn-item" role="listitem"><div class="tag">{s}</div></div>)}
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="line-div grey darker"></div>
+          <div class="caption-text description">Description</div>
+          <p class={`archive-description${bindEmpty(p.description)}`}>{p.description}</p>
+          <div class="text-block-3 more-info"><a href={href}>Read on →</a></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
