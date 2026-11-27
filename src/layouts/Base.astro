@@ -12,7 +12,13 @@ interface Props {
 
 const { title, description, ogImage, pageId, bodyClass } = Astro.props;
 const site = Astro.site ?? new URL('https://www.glowinthedirt.com');
-const canonical = new URL(Astro.url.pathname, site).href;
+// Pages build to files like /work.html, but are served at /work.
+const canonicalPath = Astro.url.pathname.replace(/\.html$/, '').replace(/\/index$/, '') || '/';
+const canonical = new URL(canonicalPath, site).href;
+// Webflow put each page's animation start states in its head, so animated
+// elements stay hidden until the animation script takes over.
+const ixInitial = import.meta.glob<string>('../data/ix-initial/*.css', { query: '?raw', import: 'default', eager: true });
+const ixInitialCss = ixInitial[`../data/ix-initial/${pageId}.css`];
 const ogImageUrl = ogImage ? new URL(ogImage, site).href : undefined;
 const GA_ID = 'G-5ZYWQP5B2L';
 ---
@@ -45,6 +51,7 @@ const GA_ID = 'G-5ZYWQP5B2L';
       gtag('js', new Date());
       gtag('config', GA_ID);
     </script>
+    {ixInitialCss && <Fragment set:html={`<style>${ixInitialCss}</style>`} />}
     <style is:global>
       body {
         -moz-osx-font-smoothing: grayscale;

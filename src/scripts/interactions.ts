@@ -7,7 +7,7 @@
  * Supported triggers: hover in/out, click / second click, page start/finish,
  * scroll into/out of view, while scrolling in view, mouse move over element.
  * Supported actions: move, scale, rotate, opacity, size, filter, text colour,
- * background colour, border colour, display.
+ * background colour, border colour, display, and Webflow's built-in slide presets.
  */
 
 type Obj = Record<string, any>;
@@ -484,7 +484,7 @@ function tickContinuous() {
       } else if (mouseMoved) {
         const r = c.el.getBoundingClientRect();
         const inside = mouse.x >= r.left && mouse.x <= r.right && mouse.y >= r.top && mouse.y <= r.bottom;
-        if (!inside) g.target = g.cfg.restingState ?? 50;
+        if (!inside) g.target = g.cfg.restingState ?? 0;
         else {
           const v = g.cfg.selectedAxis === 'Y_AXIS' ? (mouse.y - r.top) / r.height : (mouse.x - r.left) / r.width;
           g.target = (g.cfg.reverse ? 1 - v : v) * 100;
@@ -502,8 +502,39 @@ function tickContinuous() {
 
 // ---------------------------------------------------------------- events
 
+// Webflow's built-in "slide" presets, copied from its runtime. Events that use
+// them name the preset as their action list.
+const presetMove = (id: string, x: number, y: number, extra: Obj = {}) => ({
+  id, actionTypeId: 'TRANSFORM_MOVE',
+  config: { delay: 0, easing: 'outQuart', duration: 0, target: { id: 'N/A', appliesTo: 'TRIGGER_ELEMENT', useEventTarget: true }, xValue: x, yValue: y, xUnit: 'PX', yUnit: 'PX', zUnit: 'PX', ...extra },
+});
+const presetFade = (id: string, value: number, extra: Obj = {}) => ({
+  id, actionTypeId: 'STYLE_OPACITY',
+  config: { delay: 0, easing: 'outQuart', duration: 0, target: { id: 'N/A', appliesTo: 'TRIGGER_ELEMENT', useEventTarget: true }, value, ...extra },
+});
+const slideIn = (id: string, x: number, y: number) => ({
+  id, useFirstGroupAsInitialState: true,
+  actionItemGroups: [
+    { actionItems: [presetFade(`${id}-1`, 0)] },
+    { actionItems: [presetMove(`${id}-2`, x, y)] },
+    { actionItems: [presetFade(`${id}-3`, 1, { duration: 1000 }), presetMove(`${id}-4`, 0, 0, { duration: 1000 })] },
+  ],
+});
+const PRESET_LISTS: Obj = {
+  slideInRight: slideIn('slideInRight', 100, 0),
+  slideInBottom: slideIn('slideInBottom', 0, 100),
+  slideOutLeft: {
+    id: 'slideOutLeft',
+    actionItemGroups: [{ actionItems: [
+      presetFade('slideOutLeft-1', 0, { easing: 'inQuart', duration: 1000 }),
+      presetMove('slideOutLeft-2', -100, 0, { easing: 'inQuart', duration: 1000 }),
+    ] }],
+  },
+};
+const PLAYABLE = new Set(['GENERAL_START_ACTION', 'SLIDE_EFFECT']);
+
 export function initInteractions(data: Obj) {
-  const lists: Obj = data.actionLists;
+  const lists: Obj = { ...PRESET_LISTS, ...data.actionLists };
   const playbacks = new Map<string, Map<HTMLElement | null, Playback>>(); // eventId -> el -> playback
 
   const eventElements = (ev: Obj): (HTMLElement | null)[] => {
@@ -516,7 +547,7 @@ export function initInteractions(data: Obj) {
   const fire = (ev: Obj, el: HTMLElement | null) => {
     if (!ev.mediaQueries.includes(breakpoint())) return;
     const action = ev.action;
-    if (action.actionTypeId !== 'GENERAL_START_ACTION') return;
+    if (!PLAYABLE.has(action.actionTypeId)) return;
     const list = lists[action.config.actionListId];
     if (!list) return;
     const stopId = action.config.autoStopEventId;
@@ -538,7 +569,7 @@ export function initInteractions(data: Obj) {
 
   // initial states (the first action group of lists marked "set as initial state")
   for (const ev of events) {
-    if (!ev.mediaQueries.includes(bp) || ev.action?.actionTypeId !== 'GENERAL_START_ACTION') continue;
+    if (!ev.mediaQueries.includes(bp) || !PLAYABLE.has(ev.action?.actionTypeId)) continue;
     const list = lists[ev.action.config.actionListId];
     if (!list?.useFirstGroupAsInitialState || !list.actionItemGroups?.length) continue;
     for (const el of eventElements(ev)) {
@@ -549,7 +580,7 @@ export function initInteractions(data: Obj) {
   }
 
   const clickHandlers = new Map<HTMLElement, { first: Obj[]; second: Obj[]; count: number }>();
-  const io = new Map<string, IntersectionObserver>();
+  const scrollWatches: { ev: Obj; el: HTMLElement; visible?: boolean; triggered?: boolean }[] = [];
 
   for (const ev of events) {
     const els = eventElements(ev);
@@ -585,32 +616,9 @@ export function initInteractions(data: Obj) {
         else window.addEventListener('load', () => els.forEach((el) => fire(ev, el)));
         break;
       case 'SCROLL_INTO_VIEW':
-      case 'SCROLL_OUT_OF_VIEW': {
-        const off = ev.config?.scrollOffsetValue ?? 0;
-        const unit = ev.config?.scrollOffsetUnit === 'PX' ? 'px' : '%';
-        const key = `${off}${unit}`;
-        let obs = io.get(key);
-        if (!obs) {
-          obs = new IntersectionObserver((entries) => {
-            for (const en of entries) {
-              const target = en.target as HTMLElement & { __ixScroll?: { into: Obj[]; out: Obj[]; inView?: boolean } };
-              const info = target.__ixScroll;
-              if (!info) continue;
-              if (en.isIntersecting && !info.inView) { info.inView = true; info.into.forEach((e) => fire(e, target)); }
-              else if (!en.isIntersecting && info.inView) { info.inView = false; info.out.forEach((e) => fire(e, target)); }
-            }
-          }, { rootMargin: `0px 0px -${off}${unit} 0px` });
-          io.set(key, obs);
-        }
-        for (const el of els) {
-          if (!el) continue;
-          const t = el as HTMLElement & { __ixScroll?: { into: Obj[]; out: Obj[]; inView?: boolean } };
-          t.__ixScroll ??= { into: [], out: [] };
-          (ev.eventTypeId === 'SCROLL_INTO_VIEW' ? t.__ixScroll.into : t.__ixScroll.out).push(ev);
-          obs.observe(el);
-        }
+      case 'SCROLL_OUT_OF_VIEW':
+        for (const el of els) if (el) scrollWatches.push({ ev, el });
         break;
-      }
       case 'SCROLLING_IN_VIEW':
       case 'MOUSE_MOVE': {
         const cfgs: Obj[] = Array.isArray(ev.config) ? ev.config : [];
@@ -620,13 +628,48 @@ export function initInteractions(data: Obj) {
           if (!el) continue;
           const groups = cfgs.map((cfg) => {
             const g = list.continuousParameterGroups.find((x: Obj) => x.id === cfg.continuousParameterGroupId);
-            return g ? { cfg, tracks: buildTracks(g), cur: NaN, target: 0 } : null;
+            // Webflow starts a mouse-move animation at its resting state.
+            return g ? { cfg, tracks: buildTracks(g), cur: NaN, target: cfg.restingState ?? 0 } : null;
           }).filter(Boolean) as Continuous['groups'];
           continuous.push({ event: ev, el, groups });
         }
         break;
       }
     }
+  }
+
+  // Scroll into / out of view, following Webflow's runtime: each event keeps
+  // its own visible flag, the offset trims both the top and bottom of the
+  // viewport, "into" also fires on load if already visible, and an event
+  // whose paired stop event doesn't exist only ever plays once.
+  const checkScroll = () => {
+    const { clientWidth: w, clientHeight: h } = document.documentElement;
+    const now = breakpoint();
+    for (const s of scrollWatches) {
+      if (!s.ev.mediaQueries.includes(now)) continue;
+      if (s.triggered && !data.events[s.ev.action?.config?.autoStopEventId]) continue;
+      const c = s.ev.config ?? {};
+      const off = c.scrollOffsetUnit === 'PX' ? (c.scrollOffsetValue ?? 0) : (h * (c.scrollOffsetValue || 0)) / 100;
+      const r = s.el.getBoundingClientRect();
+      const visible = !(r.left > w || r.right < 0 || r.top > h - off || r.bottom < off);
+      const changed = s.visible === undefined ? visible : visible !== s.visible;
+      s.visible = visible;
+      if (changed && (s.ev.eventTypeId === 'SCROLL_INTO_VIEW') === visible) {
+        s.triggered = true;
+        fire(s.ev, s.el);
+      }
+    }
+  };
+  if (scrollWatches.length) {
+    let queued = false;
+    const onScroll = () => {
+      if (queued) return;
+      queued = true;
+      requestAnimationFrame(() => { queued = false; checkScroll(); });
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll, { passive: true });
+    checkScroll();
   }
 
   window.addEventListener('mousemove', (e) => { mouse.x = e.clientX; mouse.y = e.clientY; mouseMoved = true; }, { passive: true });
