@@ -48,6 +48,13 @@ for (const vp of viewports) {
           if (op === 'scrollTo') await page.evaluate((s) => document.querySelector(s)?.scrollIntoView(), a);
           if (op === 'mouse') await page.mouse.move(vp.width * a, vp.height * b, { steps: 10 });
         }
+        if ((sc.name === 'work' || sc.name === 'space') && vp.tag === 'desk') {
+          const rows = await page.evaluate(() => [...document.querySelectorAll('[data-w-id]')].filter((el) => { const r = el.getBoundingClientRect(); return r.top < innerHeight && r.bottom > 0; }).slice(0, 25).map((el) => {
+            const r = el.getBoundingClientRect(); const cs = getComputedStyle(el);
+            return `${el.dataset.wId.slice(-4)} ${el.className.slice(0, 30)} ${Math.round(r.left)},${Math.round(r.top)} ${Math.round(r.width)}x${Math.round(r.height)} tf=${cs.transform} w=${el.style.width} h=${el.style.height}`;
+          }));
+          log.push(`${site} ${vp.tag} ${sc.name}:\n  ` + rows.join('\n  '));
+        }
         if (sc.name === 'project-lightbox') {
           const rects = await page.evaluate(() => ['.w-lightbox-backdrop', '.w-lightbox-content', '.w-lightbox-view', '.w-lightbox-image', '.w-lightbox-strip', '.w-lightbox-close'].map((q) => {
             const el = document.querySelector(q); if (!el) return q + ' none';
